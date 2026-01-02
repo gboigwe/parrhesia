@@ -1,7 +1,7 @@
 import { relations } from "drizzle-orm";
 import { users } from "./users";
 import { debates } from "./debates";
-import { arguments as args } from "./arguments";
+import { debateArguments } from "./arguments";
 import { votes } from "./votes";
 import { badges } from "./badges";
 import { reputationEvents } from "./reputation";
@@ -11,7 +11,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   createdDebates: many(debates, { relationName: "creator" }),
   challengedDebates: many(debates, { relationName: "challenger" }),
   wonDebates: many(debates, { relationName: "winner" }),
-  arguments: many(args),
+  arguments: many(debateArguments),
   votes: many(votes),
   badges: many(badges),
   reputationEvents: many(reputationEvents),
@@ -34,19 +34,19 @@ export const debatesRelations = relations(debates, ({ one, many }) => ({
     references: [users.id],
     relationName: "winner",
   }),
-  arguments: many(args),
+  arguments: many(debateArguments),
   votes: many(votes),
   reputationEvents: many(reputationEvents),
 }));
 
 // Arguments relations
-export const argumentsRelations = relations(args, ({ one }) => ({
+export const argumentsRelations = relations(debateArguments, ({ one }) => ({
   debate: one(debates, {
-    fields: [args.debateId],
+    fields: [debateArguments.debateId],
     references: [debates.id],
   }),
   user: one(users, {
-    fields: [args.userId],
+    fields: [debateArguments.userId],
     references: [users.id],
   }),
 }));

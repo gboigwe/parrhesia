@@ -2,7 +2,7 @@ import { pgTable, text, timestamp, integer, uuid, jsonb } from "drizzle-orm/pg-c
 import { debates } from "./debates";
 import { users } from "./users";
 
-export const arguments = pgTable("arguments", {
+export const debateArguments = pgTable("arguments", {
   id: uuid("id").defaultRandom().primaryKey(),
   debateId: uuid("debate_id").references(() => debates.id, { onDelete: "cascade" }).notNull(),
   userId: uuid("user_id").references(() => users.id).notNull(),

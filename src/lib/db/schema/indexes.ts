@@ -1,7 +1,7 @@
 import { index } from "drizzle-orm/pg-core";
 import { users } from "./users";
 import { debates } from "./debates";
-import { arguments as args } from "./arguments";
+import { debateArguments } from "./arguments";
 import { votes } from "./votes";
 import { reputationEvents } from "./reputation";
 import { badges } from "./badges";
@@ -18,8 +18,8 @@ export const debatesChallengerIdx = index("debates_challenger_idx").on(debates.c
 export const debatesCreatedAtIdx = index("debates_created_at_idx").on(debates.createdAt);
 
 // Arguments indexes
-export const argsDebateIdx = index("args_debate_idx").on(args.debateId);
-export const argsUserIdx = index("args_user_idx").on(args.userId);
+export const argsDebateIdx = index("args_debate_idx").on(debateArguments.debateId);
+export const argsUserIdx = index("args_user_idx").on(debateArguments.userId);
 
 // Votes indexes
 export const votesDebateIdx = index("votes_debate_idx").on(votes.debateId);

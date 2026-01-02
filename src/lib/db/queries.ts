@@ -1,6 +1,6 @@
 import { eq, desc, and, sql } from "drizzle-orm";
 import { db } from "./index";
-import { users, debates, arguments as args, votes, badges, reputationEvents } from "./schema";
+import { users, debates, debateArguments, votes, badges, reputationEvents } from "./schema";
 
 /**
  * User Queries
@@ -62,9 +62,9 @@ export async function getUserDebates(userId: string) {
  * Argument Queries
  */
 export async function getDebateArguments(debateId: string) {
-  return db.query.arguments.findMany({
-    where: eq(args.debateId, debateId),
-    orderBy: [args.roundNumber, args.postedAt],
+  return db.query.debateArguments.findMany({
+    where: eq(debateArguments.debateId, debateId),
+    orderBy: [debateArguments.roundNumber, debateArguments.postedAt],
     with: {
       user: true,
     },
