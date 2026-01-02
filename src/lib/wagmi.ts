@@ -7,7 +7,9 @@ export const config = createConfig({
   connectors: [
     coinbaseWallet({
       appName: "Parrhesia",
-      preference: "smartWalletOnly",
+      preference: {
+        options: "smartWalletOnly",
+      },
     }),
   ],
   transports: {
