@@ -7,7 +7,7 @@ import { ConnectWallet } from "./ConnectWallet";
 
 export function OnboardingFlow() {
   const { walletAddress, hasBasename, isAuthenticated } = useAuth();
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep] = useState(1);
 
   const steps = [
     {
