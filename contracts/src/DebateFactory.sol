@@ -68,9 +68,10 @@ contract DebateFactory is UUPSUpgradeable, AccessControlUpgradeable, PausableUpg
     }
 
     /**
-     * @notice Create a new debate instance
-     * @param stakeAmount Amount of USDC to stake (6 decimals)
-     * @return debatePool Address of created debate pool
+     * @notice Create a new debate instance with specified stake amount
+     * @dev Creates a new DebatePool contract with current platform parameters
+     * @param stakeAmount Amount of USDC to stake (6 decimals), must be between MIN_STAKE and MAX_STAKE
+     * @return debatePool Address of the newly created debate pool contract
      */
     function createDebate(uint256 stakeAmount) external whenNotPaused returns (address debatePool) {
         require(stakeAmount >= MIN_STAKE, "Stake too low");

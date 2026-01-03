@@ -86,6 +86,8 @@ contract DebatePool is ReentrancyGuard {
     /**
      * @notice Stake USDC to join the debate
      * @dev Creator and challenger must both stake to activate debate
+     * @dev Caller must approve this contract to transfer stakeAmount of USDC
+     * @dev When both parties stake, debate status automatically changes to Active
      */
     function stake() external nonReentrant {
         require(status == DebateStatus.Pending, "Debate not pending");
@@ -129,9 +131,11 @@ contract DebatePool is ReentrancyGuard {
     }
 
     /**
-     * @notice Distribute prizes to winner, voters, and treasury
-     * @param voterRewardRecipients Array of voter addresses
-     * @param voterRewardAmounts Array of reward amounts for voters
+     * @notice Distribute prizes to winner, voters, and treasury after debate completion
+     * @dev Can only be called once after debate is completed
+     * @dev Automatically calculates platform fee, voter rewards pool, and winner prize
+     * @param voterRewardRecipients Array of voter addresses to receive rewards
+     * @param voterRewardAmounts Array of reward amounts for each voter (must match recipients length)
      */
     function distributePrizes(
         address[] calldata voterRewardRecipients,
