@@ -41,8 +41,8 @@ export async function POST(request: NextRequest) {
       user = await createUser({
         basename,
         walletAddress,
-        debaterReputationScore: "0",
-        voterReputationScore: "0",
+        debaterReputation: "0",
+        voterReputation: "0",
       });
     } else {
       // User exists - verify wallet address matches

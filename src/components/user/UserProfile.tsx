@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { Avatar, Name, Address, EthBalance, Identity } from "@coinbase/onchainkit/identity";
+import { Avatar, Address, EthBalance, Identity } from "@coinbase/onchainkit/identity";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 
 export function UserProfile() {
@@ -57,12 +57,12 @@ function UserProfileContent() {
       <div className="grid md:grid-cols-2 gap-6">
         <ReputationCard
           title="Debater Reputation"
-          score={parseFloat(user.debaterReputationScore || "0")}
+          score={parseFloat(user.debaterReputation || "0")}
           icon="⚔️"
         />
         <ReputationCard
           title="Voter Reputation"
-          score={parseFloat(user.voterReputationScore || "0")}
+          score={parseFloat(user.voterReputation || "0")}
           icon="🗳️"
         />
       </div>

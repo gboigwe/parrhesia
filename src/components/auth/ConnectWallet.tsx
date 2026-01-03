@@ -9,26 +9,24 @@ import {
   WalletDropdownLink,
 } from "@coinbase/onchainkit/wallet";
 import { Address, Avatar, Name, Identity, EthBalance } from "@coinbase/onchainkit/identity";
-import { color } from "@coinbase/onchainkit/theme";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function ConnectWallet() {
-  const { hasBasename, basename } = useAuth();
+  const { hasBasename } = useAuth();
 
   return (
     <div className="flex items-center gap-4">
       <Wallet>
-        <OnchainConnectWallet
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-          text="Connect Wallet"
-        />
+        <OnchainConnectWallet className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+          Connect Wallet
+        </OnchainConnectWallet>
         <WalletDropdown>
           <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
             <Avatar />
             <Name>
               <Badge />
             </Name>
-            <Address className={color.foregroundMuted} />
+            <Address />
             <EthBalance />
           </Identity>
           <WalletDropdownBasename />
