@@ -6,7 +6,9 @@ import "../src/DebateFactory.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract DeployScript is Script {
-    // Base Sepolia USDC address
+    // Base Mainnet USDC address
+    address constant USDC_BASE_MAINNET = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+    // Base Sepolia USDC address (for testing only)
     address constant USDC_BASE_SEPOLIA = 0x036CbD53842c5426634e7929541eC2318f3dCF7e;
 
     function run() external {
@@ -14,9 +16,15 @@ contract DeployScript is Script {
         address deployer = vm.addr(deployerPrivateKey);
         address treasury = vm.envOr("TREASURY_ADDRESS", deployer);
 
+        // Detect network - use mainnet by default
+        uint256 chainId = block.chainid;
+        address usdcAddress = chainId == 84532 ? USDC_BASE_SEPOLIA : USDC_BASE_MAINNET;
+        string memory network = chainId == 84532 ? "Base Sepolia (Testnet)" : "Base Mainnet";
+
+        console.log("Network:", network);
         console.log("Deployer:", deployer);
         console.log("Treasury:", treasury);
-        console.log("USDC:", USDC_BASE_SEPOLIA);
+        console.log("USDC:", usdcAddress);
 
         vm.startBroadcast(deployerPrivateKey);
 
@@ -27,7 +35,7 @@ contract DeployScript is Script {
         // Prepare initialization data
         bytes memory initData = abi.encodeWithSelector(
             DebateFactory.initialize.selector,
-            USDC_BASE_SEPOLIA,
+            usdcAddress,
             treasury
         );
 
