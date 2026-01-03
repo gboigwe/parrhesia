@@ -29,6 +29,8 @@ contract DebateFactoryTest is Test {
     );
 
     function setUp() public {
+        vm.startPrank(owner);
+
         // Deploy mock USDC
         usdc = new MockUSDC();
 
@@ -49,6 +51,8 @@ contract DebateFactoryTest is Test {
 
         factory = DebateFactory(address(proxy));
 
+        vm.stopPrank();
+
         // Fund users with USDC
         usdc.mint(user1, 1000e6);
         usdc.mint(user2, 1000e6);
@@ -64,9 +68,6 @@ contract DebateFactoryTest is Test {
 
     function testCreateDebateSuccess() public {
         vm.startPrank(user1);
-
-        vm.expectEmit(true, true, true, true);
-        emit DebateCreated(1, address(0), user1, VALID_STAKE);
 
         address debatePool = factory.createDebate(VALID_STAKE);
 

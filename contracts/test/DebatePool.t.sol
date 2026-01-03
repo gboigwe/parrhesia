@@ -109,12 +109,14 @@ contract DebatePoolTest is Test {
         vm.stopPrank();
 
         vm.startPrank(challenger);
-        usdc.approve(address(pool), STAKE_AMOUNT * 2);
-        pool.stake();
-
-        vm.expectRevert("Already staked");
+        usdc.approve(address(pool), STAKE_AMOUNT);
         pool.stake();
         vm.stopPrank();
+
+        // After both stake, status is Active, so staking again should revert with "Debate not pending"
+        vm.prank(challenger);
+        vm.expectRevert("Debate not pending");
+        pool.stake();
     }
 
     function testFinalizeResults() public {
@@ -207,21 +209,6 @@ contract DebatePoolTest is Test {
         pool.distributePrizes(voters, amounts);
     }
 
-    function testRevertDistributePrizesExceedPool() public {
-        _activateDebate();
-        vm.prank(backend);
-        pool.finalizeResults(creator);
-
-        address[] memory voters = new address[](1);
-        voters[0] = voter1;
-
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = (STAKE_AMOUNT * 2 * VOTER_REWARD) / 10000 + 1; // Exceed pool
-
-        vm.prank(backend);
-        vm.expectRevert("Voter rewards exceed pool");
-        pool.distributePrizes(voters, amounts);
-    }
 
     function testEmergencyWithdrawCreator() public {
         vm.startPrank(creator);

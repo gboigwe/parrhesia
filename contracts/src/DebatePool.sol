@@ -213,7 +213,6 @@ contract DebatePool is ReentrancyGuard {
 
     /**
      * @notice Get debate info
-     * @return Current debate status and details
      */
     function getDebateInfo() external view returns (
         DebateStatus _status,

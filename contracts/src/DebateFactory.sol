@@ -54,7 +54,6 @@ contract DebateFactory is UUPSUpgradeable, AccessControlUpgradeable, PausableUpg
         require(_usdc != address(0), "Invalid USDC address");
         require(_treasury != address(0), "Invalid treasury address");
 
-        __UUPSUpgradeable_init();
         __AccessControl_init();
         __Pausable_init();
 
