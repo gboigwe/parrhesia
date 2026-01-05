@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Badge as BaseBadge } from "@coinbase/onchainkit/identity";
 import { cn } from "@/lib/utils";
 
 interface ProfileCardProps {
@@ -105,9 +106,12 @@ export function ProfileCard({
                 {basename}
               </h2>
               {isVerified && (
-                <Badge variant="primary" size="sm">
-                  Verified
-                </Badge>
+                <>
+                  <BaseBadge className="!bg-blue-600" />
+                  <Badge variant="primary" size="sm">
+                    Verified
+                  </Badge>
+                </>
               )}
             </div>
             {bio && (
