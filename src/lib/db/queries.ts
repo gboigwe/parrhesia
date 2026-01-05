@@ -113,6 +113,20 @@ export async function hasUserVoted(debateId: string, voterId: string) {
   return !!vote;
 }
 
+export async function createVote(data: typeof votes.$inferInsert) {
+  const [vote] = await db.insert(votes).values(data).returning();
+  return vote;
+}
+
+export async function getUserVote(debateId: string, voterId: string) {
+  return db.query.votes.findFirst({
+    where: and(eq(votes.debateId, debateId), eq(votes.voterId, voterId)),
+    with: {
+      winner: true,
+    },
+  });
+}
+
 /**
  * Badge Queries
  */
