@@ -1,0 +1,47 @@
+No files changed, compilation skipped
+
+Ran 18 tests for test/DebatePool.t.sol:DebatePoolTest
+[PASS] testCancel() (gas: 37821)
+[PASS] testChallengerStakeAndActivation() (gas: 151808)
+[PASS] testCreatorStake() (gas: 106975)
+[PASS] testDistributePrizes() (gas: 296160)
+[PASS] testEmergencyWithdrawChallenger() (gas: 147488)
+[PASS] testEmergencyWithdrawCreator() (gas: 106278)
+[PASS] testFinalizeResults() (gas: 199124)
+[PASS] testGetDebateInfo() (gas: 18033)
+[PASS] testInitialization() (gas: 20367)
+[PASS] testRevertCancelAfterStake() (gas: 104151)
+[PASS] testRevertCancelNotCreator() (gas: 12214)
+[PASS] testRevertChallengerStakeTwice() (gas: 151760)
+[PASS] testRevertCreatorStakeTwice() (gas: 126808)
+[PASS] testRevertDistributePrizesLengthMismatch() (gas: 200399)
+[PASS] testRevertDistributePrizesNotCompleted() (gas: 154088)
+[PASS] testRevertDistributePrizesTwice() (gas: 235334)
+[PASS] testRevertEmergencyWithdrawActive() (gas: 151847)
+[PASS] testRevertFinalizeInvalidWinner() (gas: 152310)
+Suite result: ok. 18 passed; 0 failed; 0 skipped; finished in 1.96ms (4.31ms CPU time)
+
+Ran 15 tests for test/DebateFactory.t.sol:DebateFactoryTest
+[PASS] testCreateDebateMaxStake() (gas: 1112730)
+[PASS] testCreateDebateMinStake() (gas: 1112554)
+[PASS] testCreateDebateSuccess() (gas: 1117599)
+[PASS] testGetDebate() (gas: 1114833)
+[PASS] testInitialization() (gas: 30665)
+[PASS] testMultipleDebates() (gas: 2186319)
+[PASS] testPauseUnpause() (gas: 1126520)
+[PASS] testRevertCreateDebateStakeTooHigh() (gas: 18614)
+[PASS] testRevertCreateDebateStakeTooLow() (gas: 18460)
+[PASS] testRevertUpdatePlatformFeeTooHigh() (gas: 18708)
+[PASS] testRevertUpdateTreasuryInvalidAddress() (gas: 18900)
+[PASS] testRevertUpdateVoterRewardTooHigh() (gas: 18840)
+[PASS] testUpdatePlatformFee() (gas: 25621)
+[PASS] testUpdateTreasury() (gas: 26152)
+[PASS] testUpdateVoterReward() (gas: 25799)
+Suite result: ok. 15 passed; 0 failed; 0 skipped; finished in 2.05ms (2.09ms CPU time)
+
+Ran 2 tests for test/Counter.t.sol:CounterTest
+[PASS] testFuzz_SetNumber(uint256) (runs: 256, μ: 28343, ~: 28421)
+[PASS] test_Increment() (gas: 28418)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 7.50ms (7.27ms CPU time)
+
+Ran 3 test suites in 62.22ms (11.51ms CPU time): 35 tests passed, 0 failed, 0 skipped (35 total tests)

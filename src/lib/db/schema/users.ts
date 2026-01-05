@@ -21,3 +21,6 @@ export const users = pgTable("users", {
   bio: text("bio"),
   avatarUrl: text("avatar_url"),
 });
+
+// Export User type for use in other files
+export type User = typeof users.$inferSelect;
