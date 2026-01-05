@@ -29,8 +29,13 @@ export { ShareDebate } from "./ShareDebate";
 export { TurnIndicator } from "./TurnIndicator";
 export { DebateTimeline } from "./DebateTimeline";
 
-// Forms
+// Forms and Creation Flow
 export { CreateDebateForm } from "./CreateDebateForm";
+export { DebateCreationModal } from "./DebateCreationModal";
+export { DebateCreatedSuccess } from "./DebateCreatedSuccess";
+export { StakeSelector } from "./StakeSelector";
+export { FormatSelector } from "./FormatSelector";
+export { CategorySelector } from "./CategorySelector";
 
 // Debate utilities and constants
 export {
