@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { DEBATE_CATEGORIES, DEBATE_CONFIG } from "@/lib/constants";
+import { DEBATE_CATEGORIES, DEBATE_CONFIG, ERROR_MESSAGES } from "@/lib/constants";
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import { USDCBalance, useUSDCBalance } from "@/components/web3/USDCBalance";
 
 interface CreateDebateFormProps {
   onSuccess?: (debateId: string) => void;
@@ -19,6 +20,7 @@ export function CreateDebateForm({ onSuccess }: CreateDebateFormProps) {
 
 function CreateDebateFormContent({ onSuccess }: CreateDebateFormProps) {
   const { user } = useAuth();
+  const { balance: usdcBalance, isLoading: balanceLoading } = useUSDCBalance();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,6 +55,11 @@ function CreateDebateFormContent({ onSuccess }: CreateDebateFormProps) {
         throw new Error(
           `Stake must be between ${DEBATE_CONFIG.MIN_STAKE_USDC} and ${DEBATE_CONFIG.MAX_STAKE_USDC} USDC`
         );
+      }
+
+      // Check sufficient balance
+      if (formData.stakeAmount > usdcBalance) {
+        throw new Error(ERROR_MESSAGES.INSUFFICIENT_BALANCE);
       }
 
       // Create debate via API
@@ -188,9 +195,12 @@ function CreateDebateFormContent({ onSuccess }: CreateDebateFormProps) {
 
       {/* Stake Amount */}
       <div>
-        <label htmlFor="stake" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Stake Amount (USDC) *
-        </label>
+        <div className="flex items-center justify-between mb-2">
+          <label htmlFor="stake" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Stake Amount (USDC) *
+          </label>
+          <USDCBalance showLabel={false} />
+        </div>
         <input
           type="number"
           id="stake"
@@ -201,10 +211,16 @@ function CreateDebateFormContent({ onSuccess }: CreateDebateFormProps) {
           max={DEBATE_CONFIG.MAX_STAKE_USDC}
           step="1"
           required
+          disabled={balanceLoading}
         />
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Min: {DEBATE_CONFIG.MIN_STAKE_USDC} USDC • Max: {DEBATE_CONFIG.MAX_STAKE_USDC} USDC
-        </p>
+        <div className="mt-1 flex items-center justify-between">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Min: {DEBATE_CONFIG.MIN_STAKE_USDC} USDC • Max: {DEBATE_CONFIG.MAX_STAKE_USDC} USDC
+          </p>
+          {formData.stakeAmount > usdcBalance && (
+            <p className="text-sm text-red-600 dark:text-red-400">Insufficient balance</p>
+          )}
+        </div>
       </div>
 
       {/* Submit */}
