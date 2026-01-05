@@ -7,6 +7,8 @@ import { DebateStatus } from "@/components/debate/DebateStatus";
 import { DEBATE_CATEGORIES, ERROR_MESSAGES } from "@/lib/constants";
 import { useJoinDebate } from "@/hooks/useJoinDebate";
 import { useUSDCBalance } from "@/components/web3/USDCBalance";
+import { ArgumentForm } from "@/components/debate/ArgumentForm";
+import { DebateTimeline } from "@/components/debate/DebateTimeline";
 
 interface Debate {
   id: string;
@@ -50,10 +52,13 @@ export default function DebateDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [txStep, setTxStep] = useState<"idle" | "approving" | "joining" | "saving">("idle");
+  const [arguments, setArguments] = useState<any[]>([]);
+  const [isSubmittingArg, setIsSubmittingArg] = useState(false);
 
   useEffect(() => {
     if (params.id) {
       fetchDebate(params.id as string);
+      fetchArguments(params.id as string);
     }
   }, [params.id]);
 
@@ -70,6 +75,51 @@ export default function DebateDetailPage() {
       setError(err instanceof Error ? err.message : "Failed to load debate");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchArguments = async (id: string) => {
+    try {
+      const response = await fetch(`/api/debates/${id}/arguments`);
+      if (response.ok) {
+        const data = await response.json();
+        setArguments(data.arguments || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch arguments:", err);
+    }
+  };
+
+  const handleSubmitArgument = async (content: string) => {
+    if (!debate || !user) return;
+
+    setIsSubmittingArg(true);
+    try {
+      // Calculate next round number
+      const userArgs = arguments.filter((arg) => arg.userId === user.id);
+      const nextRound = userArgs.length + 1;
+
+      const response = await fetch(`/api/debates/${debate.id}/arguments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content,
+          userId: user.id,
+          roundNumber: nextRound,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to submit argument");
+      }
+
+      // Refresh arguments
+      await fetchArguments(debate.id);
+    } catch (err) {
+      throw err;
+    } finally {
+      setIsSubmittingArg(false);
     }
   };
 
@@ -292,6 +342,33 @@ export default function DebateDetailPage() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Arguments Timeline */}
+      {debate.status === "active" && debate.challenger && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Arguments</h2>
+          <DebateTimeline
+            arguments={arguments}
+            creatorId={debate.creator.id}
+            challengerId={debate.challenger?.id}
+          />
+
+          {/* Submit Argument Form (only for participants) */}
+          {user && (debate.creator.id === user.id || debate.challenger?.id === user.id) && (
+            <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Submit Your Next Argument
+              </h3>
+              <ArgumentForm
+                debateId={debate.id}
+                roundNumber={arguments.filter((arg) => arg.userId === user.id).length + 1}
+                onSubmit={handleSubmitArgument}
+                isSubmitting={isSubmittingArg}
+              />
+            </div>
+          )}
         </div>
       )}
 
