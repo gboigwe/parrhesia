@@ -58,6 +58,11 @@ export async function getUserDebates(userId: string) {
   });
 }
 
+export async function createDebate(data: typeof debates.$inferInsert) {
+  const [debate] = await db.insert(debates).values(data).returning();
+  return debate;
+}
+
 /**
  * Argument Queries
  */
