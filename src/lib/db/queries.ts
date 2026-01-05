@@ -76,6 +76,23 @@ export async function getDebateArguments(debateId: string) {
   });
 }
 
+export async function createArgument(data: typeof debateArguments.$inferInsert) {
+  const [argument] = await db.insert(debateArguments).values(data).returning();
+  return argument;
+}
+
+export async function getArgumentsByRound(debateId: string, roundNumber: number) {
+  return db.query.debateArguments.findMany({
+    where: and(
+      eq(debateArguments.debateId, debateId),
+      eq(debateArguments.roundNumber, roundNumber)
+    ),
+    with: {
+      user: true,
+    },
+  });
+}
+
 /**
  * Vote Queries
  */
