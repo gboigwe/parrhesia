@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { DEBATE_CATEGORIES, DEBATE_CONFIG, ERROR_MESSAGES } from "@/lib/constants";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { USDCBalance, useUSDCBalance } from "@/components/web3/USDCBalance";
+import { useCreateDebate } from "@/hooks/useCreateDebate";
 
 interface CreateDebateFormProps {
   onSuccess?: (debateId: string) => void;
@@ -21,8 +22,10 @@ export function CreateDebateForm({ onSuccess }: CreateDebateFormProps) {
 function CreateDebateFormContent({ onSuccess }: CreateDebateFormProps) {
   const { user } = useAuth();
   const { balance: usdcBalance, isLoading: balanceLoading } = useUSDCBalance();
+  const { approveUSDC, createDebate, isApproving, isCreating, factoryAddress } = useCreateDebate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [txStep, setTxStep] = useState<"idle" | "approving" | "creating" | "saving">("idle");
 
   const [formData, setFormData] = useState({
     title: "",
@@ -62,29 +65,52 @@ function CreateDebateFormContent({ onSuccess }: CreateDebateFormProps) {
         throw new Error(ERROR_MESSAGES.INSUFFICIENT_BALANCE);
       }
 
-      // Create debate via API
-      const response = await fetch("/api/debates", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          creatorId: user?.id,
-        }),
+      if (!factoryAddress) {
+        throw new Error("Debate factory not deployed on this network");
+      }
+
+      // Step 1: Approve USDC
+      setTxStep("approving");
+      await approveUSDC(formData.stakeAmount);
+
+      // Step 2: Create debate on-chain
+      setTxStep("creating");
+      await createDebate({
+        stakeAmount: formData.stakeAmount,
+        onSuccess: async (debatePoolAddress, txHash) => {
+          // Step 3: Save to database
+          setTxStep("saving");
+          const response = await fetch("/api/debates", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...formData,
+              creatorId: user?.id,
+              contractAddress: debatePoolAddress,
+              transactionHash: txHash,
+            }),
+          });
+
+          if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || "Failed to save debate");
+          }
+
+          const { debateId } = await response.json();
+
+          // Success
+          setTxStep("idle");
+          if (onSuccess) {
+            onSuccess(debateId);
+          }
+        },
+        onError: (error) => {
+          throw error;
+        },
       });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to create debate");
-      }
-
-      const { debateId } = await response.json();
-
-      // Success
-      if (onSuccess) {
-        onSuccess(debateId);
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create debate");
+      setTxStep("idle");
     } finally {
       setIsSubmitting(false);
     }
@@ -223,10 +249,29 @@ function CreateDebateFormContent({ onSuccess }: CreateDebateFormProps) {
         </div>
       </div>
 
+      {/* Transaction Progress */}
+      {txStep !== "idle" && (
+        <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+            <div>
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                {txStep === "approving" && "Step 1/3: Approving USDC..."}
+                {txStep === "creating" && "Step 2/3: Creating debate on-chain..."}
+                {txStep === "saving" && "Step 3/3: Saving to database..."}
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                Please confirm the transaction in your wallet
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Submit */}
       <button
         type="submit"
-        disabled={isSubmitting}
+        disabled={isSubmitting || isApproving || isCreating}
         className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
       >
         {isSubmitting ? "Creating Debate..." : "Create Debate & Stake"}
