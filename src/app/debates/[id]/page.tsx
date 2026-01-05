@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { DebateStatus } from "@/components/debate/DebateStatus";
-import { DEBATE_CATEGORIES } from "@/lib/constants";
+import { DEBATE_CATEGORIES, ERROR_MESSAGES } from "@/lib/constants";
+import { useJoinDebate } from "@/hooks/useJoinDebate";
+import { useUSDCBalance } from "@/components/web3/USDCBalance";
 
 interface Debate {
   id: string;
@@ -41,9 +43,13 @@ export default function DebateDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
+  const { balance: usdcBalance } = useUSDCBalance();
+  const { joinDebate: joinDebateOnChain, approveUSDC, isApproving, isJoining } = useJoinDebate();
   const [debate, setDebate] = useState<Debate | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const [txStep, setTxStep] = useState<"idle" | "approving" | "joining" | "saving">("idle");
 
   useEffect(() => {
     if (params.id) {
@@ -77,8 +83,55 @@ export default function DebateDetailPage() {
   };
 
   const handleJoinDebate = async () => {
-    // TODO: Implement join debate logic
-    console.log("Join debate");
+    if (!debate || !user || !debate.contractAddress) return;
+
+    setJoinError(null);
+    const stakeAmount = parseFloat(debate.stakeAmount);
+
+    try {
+      // Validation
+      if (stakeAmount > usdcBalance) {
+        throw new Error(ERROR_MESSAGES.INSUFFICIENT_BALANCE);
+      }
+
+      // Step 1: Approve USDC
+      setTxStep("approving");
+      await approveUSDC(debate.contractAddress, stakeAmount);
+
+      // Step 2: Join debate on-chain
+      setTxStep("joining");
+      await joinDebateOnChain({
+        debatePoolAddress: debate.contractAddress,
+        stakeAmount,
+        debateId: debate.id,
+        onSuccess: async (txHash) => {
+          // Step 3: Update database
+          setTxStep("saving");
+          const response = await fetch(`/api/debates/${debate.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              challengerId: user.id,
+              transactionHash: txHash,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to update debate in database");
+          }
+
+          // Refresh debate data
+          await fetchDebate(debate.id);
+          setTxStep("idle");
+        },
+        onError: (error) => {
+          throw error;
+        },
+      });
+    } catch (err) {
+      setJoinError(err instanceof Error ? err.message : "Failed to join debate");
+      setTxStep("idle");
+    }
   };
 
   if (isLoading) {
@@ -118,6 +171,32 @@ export default function DebateDetailPage() {
       >
         ← Back to debates
       </button>
+
+      {/* Join Error */}
+      {joinError && (
+        <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+          <p className="text-red-800 dark:text-red-200">{joinError}</p>
+        </div>
+      )}
+
+      {/* Transaction Progress */}
+      {txStep !== "idle" && (
+        <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+            <div>
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                {txStep === "approving" && "Step 1/3: Approving USDC..."}
+                {txStep === "joining" && "Step 2/3: Joining debate on-chain..."}
+                {txStep === "saving" && "Step 3/3: Updating database..."}
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                Please confirm the transaction in your wallet
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 mb-6">
@@ -167,9 +246,10 @@ export default function DebateDetailPage() {
                 {canJoinDebate() && (
                   <button
                     onClick={handleJoinDebate}
-                    className="mt-3 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                    disabled={isApproving || isJoining || txStep !== "idle"}
+                    className="mt-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
                   >
-                    Join This Debate
+                    {txStep !== "idle" ? "Joining..." : "Join This Debate"}
                   </button>
                 )}
               </div>
