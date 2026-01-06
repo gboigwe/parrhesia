@@ -52,6 +52,10 @@ export { ArgumentSubmissionForm } from "./ArgumentSubmissionForm";
 export { DebateInfoSidebar } from "./DebateInfoSidebar";
 export { DebateDetailSkeleton } from "./DebateDetailSkeleton";
 export { DebateErrorState } from "./DebateErrorState";
+export { ArgumentMetadata } from "./ArgumentMetadata";
+export { ArgumentSources } from "./ArgumentSources";
+export { DebateActions } from "./DebateActions";
+export { DebateProgress } from "./DebateProgress";
 
 // Debate utilities and constants
 export {
