@@ -37,6 +37,14 @@ export { StakeSelector } from "./StakeSelector";
 export { FormatSelector } from "./FormatSelector";
 export { CategorySelector } from "./CategorySelector";
 
+// Discovery and List components
+export { DebateDiscovery } from "./DebateDiscovery";
+export { DebateFilters } from "./DebateFilters";
+export { DebateList } from "./DebateList";
+export { DebateSkeleton } from "./DebateSkeleton";
+export { EmptyDebates } from "./EmptyDebates";
+export type { DebateFiltersState } from "./DebateDiscovery";
+
 // Debate utilities and constants
 export {
   DEBATE_TIMING,
