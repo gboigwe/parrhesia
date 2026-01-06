@@ -3,12 +3,94 @@ import { createDebate, getActiveDebates } from "@/lib/db/queries";
 import { DEBATE_CONFIG } from "@/lib/constants";
 
 /**
- * GET /api/debates - Get all active debates
+ * GET /api/debates - Get debates with filtering, sorting, and pagination
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const debates = await getActiveDebates();
-    return NextResponse.json({ debates });
+    const { searchParams } = new URL(request.url);
+
+    // Parse query parameters
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "12");
+    const search = searchParams.get("search") || "";
+    const category = searchParams.get("category") || "all";
+    const status = searchParams.get("status") || "all";
+    const minStake = parseFloat(searchParams.get("minStake") || "0");
+    const maxStake = parseFloat(searchParams.get("maxStake") || "10000");
+    const sortBy = searchParams.get("sortBy") || "newest";
+
+    // Get all debates first
+    let debates = await getActiveDebates();
+
+    // Apply filters
+    if (search) {
+      const searchLower = search.toLowerCase();
+      debates = debates.filter(
+        (d) =>
+          d.topic.toLowerCase().includes(searchLower) ||
+          d.resolution.toLowerCase().includes(searchLower)
+      );
+    }
+
+    if (category !== "all") {
+      debates = debates.filter((d) => d.category === category);
+    }
+
+    if (status !== "all") {
+      debates = debates.filter((d) => d.status === status);
+    }
+
+    // Apply stake range filter
+    debates = debates.filter((d) => {
+      const stake = parseFloat(d.stakeAmount);
+      return stake >= minStake && stake <= maxStake;
+    });
+
+    // Apply sorting
+    switch (sortBy) {
+      case "newest":
+        debates.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        break;
+      case "popular":
+        // Sort by number of participants/views (placeholder)
+        debates.sort((a, b) => {
+          const aPopularity = a.challenger ? 2 : 1;
+          const bPopularity = b.challenger ? 2 : 1;
+          return bPopularity - aPopularity;
+        });
+        break;
+      case "stake":
+        debates.sort(
+          (a, b) => parseFloat(b.stakeAmount) - parseFloat(a.stakeAmount)
+        );
+        break;
+      case "ending":
+        // Sort by created date for now (most recent first)
+        debates.sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+        break;
+    }
+
+    // Apply pagination
+    const total = debates.length;
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedDebates = debates.slice(startIndex, endIndex);
+
+    return NextResponse.json({
+      debates: paginatedDebates,
+      pagination: {
+        page,
+        limit,
+        total,
+        hasMore: endIndex < total,
+      },
+    });
   } catch (error) {
     console.error("Error fetching debates:", error);
     return NextResponse.json(
