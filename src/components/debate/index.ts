@@ -45,6 +45,18 @@ export { DebateSkeleton } from "./DebateSkeleton";
 export { EmptyDebates } from "./EmptyDebates";
 export type { DebateFiltersState } from "./DebateDiscovery";
 
+// Detail Page components
+export { DebateHeader } from "./DebateHeader";
+export { ArgumentList } from "./ArgumentList";
+export { ArgumentSubmissionForm } from "./ArgumentSubmissionForm";
+export { DebateInfoSidebar } from "./DebateInfoSidebar";
+export { DebateDetailSkeleton } from "./DebateDetailSkeleton";
+export { DebateErrorState } from "./DebateErrorState";
+export { ArgumentMetadata } from "./ArgumentMetadata";
+export { ArgumentSources } from "./ArgumentSources";
+export { DebateActions } from "./DebateActions";
+export { DebateProgress } from "./DebateProgress";
+
 // Debate utilities and constants
 export {
   DEBATE_TIMING,
