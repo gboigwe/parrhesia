@@ -45,6 +45,14 @@ export { DebateSkeleton } from "./DebateSkeleton";
 export { EmptyDebates } from "./EmptyDebates";
 export type { DebateFiltersState } from "./DebateDiscovery";
 
+// Detail Page components
+export { DebateHeader } from "./DebateHeader";
+export { ArgumentList } from "./ArgumentList";
+export { ArgumentSubmissionForm } from "./ArgumentSubmissionForm";
+export { DebateInfoSidebar } from "./DebateInfoSidebar";
+export { DebateDetailSkeleton } from "./DebateDetailSkeleton";
+export { DebateErrorState } from "./DebateErrorState";
+
 // Debate utilities and constants
 export {
   DEBATE_TIMING,
