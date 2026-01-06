@@ -31,7 +31,7 @@ export function DebateDiscovery() {
   const [page, setPage] = useState(1);
   const limit = 12;
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["debates", filters, page],
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -95,32 +95,53 @@ export function DebateDiscovery() {
       {data && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            {data.total > 0 ? (
+            {data.pagination?.total > 0 ? (
               <>
-                Showing {data.debates.length} of {data.total} debates
+                Showing {data.debates.length} of {data.pagination.total} debates
                 {hasActiveFilters && " (filtered)"}
               </>
             ) : (
               "No debates found"
             )}
           </p>
-          {hasActiveFilters && (
+          <div className="flex items-center gap-3">
+            {hasActiveFilters && (
+              <button
+                onClick={() =>
+                  setFilters({
+                    search: "",
+                    category: "all",
+                    status: "all",
+                    minStake: 0,
+                    maxStake: 1000,
+                    sortBy: "newest",
+                  })
+                }
+                className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Clear filters
+              </button>
+            )}
             <button
-              onClick={() =>
-                setFilters({
-                  search: "",
-                  category: "all",
-                  status: "all",
-                  minStake: 0,
-                  maxStake: 1000,
-                  sortBy: "newest",
-                })
-              }
-              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              onClick={() => refetch()}
+              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              title="Refresh debates"
             >
-              Clear filters
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
             </button>
-          )}
+          </div>
         </div>
       )}
 
@@ -147,7 +168,7 @@ export function DebateDiscovery() {
           <DebateList debates={data.debates} />
 
           {/* Load More */}
-          {data.hasMore && (
+          {data.pagination?.hasMore && (
             <div className="flex justify-center mt-8">
               <Button
                 variant="outline"
@@ -160,7 +181,7 @@ export function DebateDiscovery() {
           )}
 
           {/* Pagination Info */}
-          {!data.hasMore && data.total > limit && (
+          {!data.pagination?.hasMore && data.pagination?.total > limit && (
             <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8">
               You've reached the end of the list
             </p>
