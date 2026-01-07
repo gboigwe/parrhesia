@@ -8,6 +8,15 @@ export {
   updateDebateReputation,
 } from "./updateReputation";
 
+export {
+  calculateDebaterReputation,
+  calculateVoterReputation,
+  calculateWinRate,
+  calculateAccuracy,
+  getReputationTier,
+  calculateReputationChange,
+} from "./calculateReputation";
+
 export type {
   ReputationUpdateParams,
   ReputationUpdateResponse,
