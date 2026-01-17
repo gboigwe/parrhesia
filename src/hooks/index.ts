@@ -6,3 +6,4 @@ export { useDebateCreation } from "./useDebateCreation";
 export { useArgumentSubmission } from "./useArgumentSubmission";
 export { useVoteSubmission } from "./useVoteSubmission";
 export { usePrizeClaim } from "./usePrizeClaim";
+export { useBadgeMinting } from "./useBadgeMinting";
