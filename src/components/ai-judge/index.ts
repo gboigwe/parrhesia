@@ -4,3 +4,4 @@
 
 export { AIJudgeResults } from "./AIJudgeResults";
 export { JudgeExplanation } from "./JudgeExplanation";
+export { RequestJudgeButton } from "./RequestJudgeButton";
