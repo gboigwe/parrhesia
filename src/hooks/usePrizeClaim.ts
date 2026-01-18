@@ -1,49 +1,83 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useConfig } from "wagmi";
+import { useAccount } from "wagmi";
+import { claimPrizeWithConfirmation } from "@/lib/prizes/transaction";
+import { verifyClaimEligibility } from "@/lib/prizes/verification";
+import { parseContractError } from "@/lib/prizes/errors";
 
 interface ClaimPrizeParams {
   debateId: string;
-  userId: string;
-  type: "winner" | "voter";
+  contractAddress: string;
 }
 
 interface ClaimPrizeResponse {
-  message: string;
-  transactionHash?: string;
-  amountClaimed: string;
-  reputationEarned: number;
+  success: boolean;
+  transactionHash: string;
+  blockNumber: number;
+  amount: string;
 }
 
 export function usePrizeClaim() {
   const queryClient = useQueryClient();
+  const config = useConfig();
+  const { address } = useAccount();
 
   const mutation = useMutation({
     mutationFn: async (params: ClaimPrizeParams): Promise<ClaimPrizeResponse> => {
-      const response = await fetch(
-        `/api/debates/${params.debateId}/claim`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userId: params.userId,
-            type: params.type,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to claim prize");
+      if (!address) {
+        throw new Error("Wallet not connected");
       }
 
-      return response.json();
+      const eligibility = await verifyClaimEligibility(
+        params.contractAddress,
+        address,
+        config
+      );
+
+      if (!eligibility.isEligible) {
+        throw new Error(eligibility.reason || "Not eligible to claim prize");
+      }
+
+      try {
+        const result = await claimPrizeWithConfirmation(
+          params.contractAddress,
+          config
+        );
+
+        const apiResponse = await fetch(
+          `/api/debates/${params.debateId}/claim`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              winnerAddress: address,
+              contractAddress: params.contractAddress,
+              transactionHash: result.transactionHash,
+              blockNumber: result.blockNumber,
+              amount: eligibility.amount,
+            }),
+          }
+        );
+
+        if (!apiResponse.ok) {
+          console.error("Failed to record claim in database");
+        }
+
+        return {
+          success: true,
+          transactionHash: result.transactionHash,
+          blockNumber: result.blockNumber,
+          amount: eligibility.amount || "0",
+        };
+      } catch (error) {
+        throw parseContractError(error);
+      }
     },
     onSuccess: (data, variables) => {
-      // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ["debate", variables.debateId] });
-      queryClient.invalidateQueries({ queryKey: ["results", variables.debateId] });
-      queryClient.invalidateQueries({ queryKey: ["user", variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ["user", address] });
     },
   });
 
