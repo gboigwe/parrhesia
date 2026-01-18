@@ -49,6 +49,11 @@ export const debates = pgTable("debates", {
   contractAddress: text("contract_address"),
   transactionHash: text("transaction_hash"),
 
+  // Prize Claim
+  prizeClaimed: timestamp("prize_claimed"),
+  prizeClaimTxHash: text("prize_claim_tx_hash"),
+  prizeClaimBlockNumber: text("prize_claim_block_number"),
+
   // Winner
   winnerId: uuid("winner_id").references(() => users.id),
 });
