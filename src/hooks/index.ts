@@ -8,3 +8,4 @@ export { useVoteSubmission } from "./useVoteSubmission";
 export { usePrizeClaim } from "./usePrizeClaim";
 export { useBadgeMinting } from "./useBadgeMinting";
 export { useAIJudge, useAIJudgeVerdict } from "./useAIJudge";
+export { useModeration, useFlagContent, useSubmitAppeal } from "./useModeration";
