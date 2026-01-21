@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDebateArguments, createArgument, getDebateById } from "@/lib/db/queries";
 import { DEBATE_CONFIG } from "@/lib/constants";
+import { requireAuth } from "@/lib/auth/middleware";
 
 /**
  * GET /api/debates/[id]/arguments - Get all arguments for a debate
@@ -22,27 +23,29 @@ export async function GET(
 }
 
 /**
- * POST /api/debates/[id]/arguments - Submit a new argument
+ * POST /api/debates/[id]/arguments - Submit a new argument (PROTECTED)
  */
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // SECURITY: Require authentication
+  const auth = await requireAuth(request);
+  if (!auth.authenticated || !auth.address) {
+    return auth.response!;
+  }
+
   try {
     const body = await request.json();
-    const { content, userId, roundNumber } = body;
+    const { content, roundNumber } = body;
+
+    // SECURITY: Use authenticated address for userId lookup
+    const userId = auth.address;
 
     // Validation
     if (!content || !content.trim()) {
       return NextResponse.json(
         { error: "Argument content is required" },
-        { status: 400 }
-      );
-    }
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: "User ID is required" },
         { status: 400 }
       );
     }
