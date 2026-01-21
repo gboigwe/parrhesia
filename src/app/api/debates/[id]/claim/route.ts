@@ -1,21 +1,31 @@
 /**
  * Prize Claim API Endpoint
- * POST /api/debates/[id]/claim
+ * POST /api/debates/[id]/claim (PROTECTED)
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { verifyClaimEligibility } from "@/lib/prizes/verification";
 import { validateContractAddress, validateDebateId } from "@/lib/prizes/verification";
+import { requireAuth } from "@/lib/auth/middleware";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // SECURITY: Require authentication
+  const auth = await requireAuth(req);
+  if (!auth.authenticated || !auth.address) {
+    return auth.response!;
+  }
+
   try {
     const debateId = params.id;
     const body = await req.json();
 
-    const { winnerAddress, contractAddress, transactionHash, blockNumber, amount } = body;
+    const { contractAddress, transactionHash, blockNumber, amount } = body;
+
+    // SECURITY: Use authenticated address, not client-provided winnerAddress
+    const winnerAddress = auth.address;
 
     if (!validateDebateId(debateId)) {
       return NextResponse.json(

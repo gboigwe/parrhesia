@@ -9,6 +9,7 @@ interface AuthGuardProps {
   children: React.ReactNode;
   requireAuth?: boolean;
   requireBasename?: boolean;
+  requireSession?: boolean;
   redirectTo?: string;
 }
 
@@ -19,10 +20,11 @@ export function AuthGuard({
   children,
   requireAuth = false,
   requireBasename = false,
+  requireSession = false,
   redirectTo = "/",
 }: AuthGuardProps) {
   const router = useRouter();
-  const { isAuthenticated, hasBasename, isLoading, walletAddress } = useAuth();
+  const { isAuthenticated, hasBasename, isLoading, walletAddress, sessionAddress } = useAuth();
 
   useEffect(() => {
     if (isLoading) return;
@@ -32,11 +34,16 @@ export function AuthGuard({
       return;
     }
 
+    if (requireSession && !sessionAddress) {
+      router.push(redirectTo);
+      return;
+    }
+
     if (requireBasename && !hasBasename && walletAddress) {
       // Don't redirect, show the BasenameRequired component
       return;
     }
-  }, [isAuthenticated, hasBasename, isLoading, requireAuth, requireBasename, redirectTo, router, walletAddress]);
+  }, [isAuthenticated, hasBasename, isLoading, requireAuth, requireBasename, requireSession, sessionAddress, redirectTo, router, walletAddress]);
 
   // Show loading state
   if (isLoading) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDebateVotes, createVote, hasUserVoted, getDebateById } from "@/lib/db/queries";
 import { VOTING_WEIGHTS } from "@/lib/constants";
+import { requireAuth } from "@/lib/auth/middleware";
 
 /**
  * GET /api/debates/[id]/votes - Get all votes for a debate
@@ -22,16 +23,21 @@ export async function GET(
 }
 
 /**
- * POST /api/debates/[id]/votes - Submit a vote
+ * POST /api/debates/[id]/votes - Submit a vote (PROTECTED)
  */
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // SECURITY: Require authentication
+  const auth = await requireAuth(request);
+  if (!auth.authenticated || !auth.address) {
+    return auth.response!;
+  }
+
   try {
     const body = await request.json();
     const {
-      voterId,
       winnerId,
       argumentQuality,
       rebuttalStrength,
@@ -40,6 +46,9 @@ export async function POST(
       persuasiveness,
       feedback,
     } = body;
+
+    // SECURITY: Use authenticated address, not client-provided voterId
+    const voterId = auth.address;
 
     // Validation
     if (!voterId) {
