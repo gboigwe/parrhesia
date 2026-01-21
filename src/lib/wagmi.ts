@@ -16,6 +16,8 @@ export const config = createConfig({
     [base.id]: http(),
     [baseSepolia.id]: http(),
   },
+  // Enable experimental features for Smart Wallets
+  multiInjectedProviderDiscovery: true,
   ssr: true,
 });
 
