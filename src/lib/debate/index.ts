@@ -41,3 +41,9 @@ export {
   hasActiveFilters,
   getDefaultFilters,
 } from "./filters";
+
+// Join debate utilities
+export * from "./joinErrors";
+export * from "./joinAnalytics";
+export * from "./retryJoin";
+export * from "./rateLimit";

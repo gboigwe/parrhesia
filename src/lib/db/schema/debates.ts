@@ -33,6 +33,10 @@ export const debates = pgTable("debates", {
   // Participants
   creatorId: uuid("creator_id").references(() => users.id).notNull(),
   challengerId: uuid("challenger_id").references(() => users.id),
+  challengerWallet: text("challenger_wallet"),
+  joinedAt: timestamp("joined_at"),
+  joinTxHash: text("join_tx_hash"),
+  joinTxBlock: text("join_tx_block"),
 
   // Stakes and prizes
   stakeAmount: decimal("stake_amount", { precision: 18, scale: 6 }).notNull(), // USDC has 6 decimals
