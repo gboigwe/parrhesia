@@ -82,6 +82,19 @@ export {
   calculateDebateDuration,
 } from "@/lib/debate/utils";
 
+// Join debate components
+export { JoinDebateButton } from "./JoinDebateButton";
+export { JoinProgress } from "./JoinProgress";
+export { JoinConfirmModal } from "./JoinConfirmModal";
+export { JoinSuccessToast } from "./JoinSuccessToast";
+export { TransactionHashDisplay } from "./TransactionHashDisplay";
+export { BalanceDisplay } from "./BalanceDisplay";
+export { GaslessJoinWrapper } from "./GaslessJoinWrapper";
+export * from "./JoinLoadingStates";
+
+// Batch voting
+export { BatchVoting } from "./BatchVoting";
+
 // Debate types
 export type {
   Debate,
