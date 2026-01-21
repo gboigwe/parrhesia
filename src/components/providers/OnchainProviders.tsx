@@ -41,6 +41,10 @@ export function OnchainProviders({
               mode: "auto",
               theme: "default",
             },
+            wallet: {
+              termsUrl: "https://parrhesia.app/terms",
+              privacyUrl: "https://parrhesia.app/privacy",
+            },
           }}
         >
           {children}
