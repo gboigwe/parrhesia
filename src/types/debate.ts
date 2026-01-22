@@ -14,6 +14,42 @@ export type DebateCategory =
   | "dao"
   | "custom";
 
+/**
+ * Blockchain synchronization status
+ * - pending: Waiting for blockchain confirmation
+ * - confirming: Transaction submitted to blockchain
+ * - confirmed: Transaction confirmed on blockchain
+ * - failed: Transaction failed on blockchain
+ * - syncing: Actively syncing state from blockchain
+ */
+export type SyncStatus = "pending" | "confirming" | "confirmed" | "failed" | "syncing";
+
+/**
+ * Blockchain synchronization error
+ */
+export interface SyncError {
+  timestamp: string;
+  message: string;
+  code?: string | null;
+}
+
+/**
+ * Blockchain metadata for debates
+ * Ensures database stays in sync with Base blockchain (L2)
+ */
+export interface BlockchainMetadata {
+  contractAddress?: string | null;
+  transactionHash?: string | null;
+  blockNumber?: number | null;
+  chainId: number; // 8453 for Base mainnet, 84532 for Base Sepolia
+  syncStatus: SyncStatus;
+  lastSyncedAt?: Date | null;
+  lastSyncedBlock?: number | null;
+  onChainWinner?: string | null; // Source of truth for prize distribution
+  onChainStatus?: string | null; // Source of truth for debate status
+  syncErrors: SyncError[];
+}
+
 export interface Debate {
   id: string;
   topic: string;
@@ -33,6 +69,7 @@ export interface Debate {
   creatorId: string;
   challengerId?: string | null;
   winnerId?: string | null;
+  blockchain?: BlockchainMetadata; // Blockchain synchronization metadata
 }
 
 export interface DebateWithParticipants extends Debate {
