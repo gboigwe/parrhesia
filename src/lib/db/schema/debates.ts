@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, decimal, uuid, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, decimal, uuid, pgEnum, bigint, integer, jsonb } from "drizzle-orm/pg-core";
 import { users } from "./users";
 
 export const debateStatusEnum = pgEnum("debate_status", [
@@ -20,6 +20,14 @@ export const debateCategoryEnum = pgEnum("debate_category", [
   "entertainment",
   "dao",
   "custom",
+]);
+
+export const syncStatusEnum = pgEnum("sync_status", [
+  "pending",
+  "confirming",
+  "confirmed",
+  "failed",
+  "syncing",
 ]);
 
 export const debates = pgTable("debates", {
@@ -48,6 +56,16 @@ export const debates = pgTable("debates", {
   // Blockchain
   contractAddress: text("contract_address"),
   transactionHash: text("transaction_hash"),
+  blockNumber: bigint("block_number", { mode: "number" }),
+  chainId: integer("chain_id").default(8453),
+  
+  // Blockchain Synchronization
+  syncStatus: syncStatusEnum("sync_status").default("pending"),
+  lastSyncedAt: timestamp("last_synced_at"),
+  lastSyncedBlock: bigint("last_synced_block", { mode: "number" }),
+  onChainWinner: text("on_chain_winner"),
+  onChainStatus: text("on_chain_status"),
+  syncErrors: jsonb("sync_errors").default([]),
 
   // Prize Claim
   prizeClaimed: timestamp("prize_claimed"),
