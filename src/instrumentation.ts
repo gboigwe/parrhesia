@@ -5,6 +5,7 @@
  */
 
 import { initializeEventListener } from "@/lib/services/eventListenerService";
+import { startReconciliationService } from "@/lib/blockchain/reconciliation";
 
 export async function register() {
   // Only run on server
@@ -14,6 +15,9 @@ export async function register() {
     try {
       // Initialize blockchain event listener
       await initializeEventListener();
+      
+      // Start reconciliation service (runs every 5 minutes)
+      startReconciliationService(5);
       
       console.log("[Instrumentation] All services initialized successfully");
     } catch (error) {
