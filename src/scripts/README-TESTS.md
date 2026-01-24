@@ -65,17 +65,25 @@ Your test wallets need:
 - Deploy a mock USDC contract, or
 - Use existing USDC faucet if available
 
-### 3. Install tsx
+### 3. Install Dependencies
 
 ```bash
-npm install -D tsx
+npm install --legacy-peer-deps
 # or
-pnpm add -D tsx
+pnpm install
 ```
+
+The test script requires `tsx` which is already in devDependencies.
 
 ## Running the Tests
 
 ### Full Test Suite
+
+```bash
+npm run test:blockchain
+```
+
+Or directly with tsx:
 
 ```bash
 npx tsx src/scripts/test-blockchain-sync.ts
