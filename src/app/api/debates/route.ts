@@ -101,87 +101,117 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST /api/debates - Create a new debate
+ * POST /api/debates - Create a new debate with blockchain metadata
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, description, category, format, stakeAmount, creatorId } = body;
+    const {
+      debateId,
+      topic,
+      stakeAmount,
+      duration,
+      creatorAddress,
+      transactionHash,
+      contractAddress,
+      blockNumber,
+      chainId,
+      syncStatus,
+      category,
+      format,
+    } = body;
 
-    // Validation
-    if (!title || title.length < 10) {
+    // Validate required fields
+    if (!debateId) {
       return NextResponse.json(
-        { error: "Title must be at least 10 characters" },
+        { error: "Debate ID is required" },
         { status: 400 }
       );
     }
 
-    if (!description || description.length < 50) {
+    if (!topic || topic.length < 10) {
       return NextResponse.json(
-        { error: "Description must be at least 50 characters" },
+        { error: "Topic must be at least 10 characters" },
         { status: 400 }
       );
     }
 
-    if (!category) {
-      return NextResponse.json(
-        { error: "Category is required" },
-        { status: 400 }
-      );
-    }
-
-    if (!format || !["live", "async"].includes(format)) {
-      return NextResponse.json(
-        { error: "Valid format is required (live or async)" },
-        { status: 400 }
-      );
-    }
-
-    if (
-      !stakeAmount ||
-      stakeAmount < DEBATE_CONFIG.MIN_STAKE_USDC ||
-      stakeAmount > DEBATE_CONFIG.MAX_STAKE_USDC
-    ) {
+    if (!stakeAmount || stakeAmount < DEBATE_CONFIG.MIN_STAKE_USDC) {
       return NextResponse.json(
         {
-          error: `Stake must be between ${DEBATE_CONFIG.MIN_STAKE_USDC} and ${DEBATE_CONFIG.MAX_STAKE_USDC} USDC`,
+          error: `Stake must be at least ${DEBATE_CONFIG.MIN_STAKE_USDC} USDC`,
         },
         { status: 400 }
       );
     }
 
-    if (!creatorId) {
+    if (!transactionHash) {
       return NextResponse.json(
-        { error: "Creator ID is required" },
+        { error: "Transaction hash is required" },
         { status: 400 }
       );
     }
 
-    // Map format: "live" -> "timed" for database
-    const dbFormat = format === "live" ? "timed" : "async";
+    if (!blockNumber) {
+      return NextResponse.json(
+        { error: "Block number is required" },
+        { status: 400 }
+      );
+    }
 
-    // Create debate in database
+    if (!creatorAddress) {
+      return NextResponse.json(
+        { error: "Creator address is required" },
+        { status: 400 }
+      );
+    }
+
+    // Create debate in database with blockchain metadata
     const debate = await createDebate({
-      topic: title,
-      resolution: description,
-      category,
-      format: dbFormat,
+      id: debateId,
+      topic,
+      resolution: topic, // Using topic as resolution for now
+      category: category || "custom",
+      format: format || "async",
       stakeAmount: stakeAmount.toString(),
-      creatorId,
-      status: "pending", // Waiting for opponent
+      creatorId: creatorAddress, // Using wallet address as creator ID for now
+      status: "pending",
+      prizePool: (stakeAmount * 2).toString(), // Prize pool is 2x stake (both parties)
+      
+      // Blockchain metadata
+      contractAddress: contractAddress || null,
+      transactionHash,
+      blockNumber: blockNumber,
+      chainId: chainId || 8453,
+      syncStatus: syncStatus || "confirmed",
+      lastSyncedAt: new Date(),
+      lastSyncedBlock: blockNumber,
+      syncErrors: [],
     });
+
+    console.log(`Debate ${debateId} saved to database`);
+    console.log(`  Topic: ${topic}`);
+    console.log(`  Stake: ${stakeAmount} USDC`);
+    console.log(`  Transaction: ${transactionHash}`);
+    console.log(`  Block: ${blockNumber}`);
+    console.log(`  Sync Status: ${syncStatus || "confirmed"}`);
 
     return NextResponse.json(
       {
+        id: debate.id,
         debateId: debate.id,
         message: "Debate created successfully",
+        debate,
       },
       { status: 201 }
     );
   } catch (error) {
     console.error("Error creating debate:", error);
     return NextResponse.json(
-      { error: "Failed to create debate" },
+      {
+        error: "Failed to create debate",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }

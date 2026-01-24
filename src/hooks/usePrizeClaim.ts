@@ -1,93 +1,243 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useConfig } from "wagmi";
-import { useAccount } from "wagmi";
-import { claimPrizeWithConfirmation } from "@/lib/prizes/transaction";
-import { verifyClaimEligibility } from "@/lib/prizes/verification";
-import { parseContractError } from "@/lib/prizes/errors";
+"use client";
+
+import { useState } from "react";
+import { useAccount, useWriteContract } from "wagmi";
+import { verifyPrizeClaimEligibility } from "@/lib/blockchain/verification";
+import { waitForConfirmation } from "@/lib/blockchain/transactions";
+
+/**
+ * Status of the prize claim process
+ * - idle: Not started
+ * - verifying: Checking on-chain eligibility
+ * - signing: User signing claim transaction
+ * - confirming: Waiting for blockchain confirmation
+ * - syncing: Updating database after confirmation
+ * - success: Prize claimed successfully
+ * - error: Something failed
+ */
+type ClaimPrizeStatus = "idle" | "verifying" | "signing" | "confirming" | "syncing" | "success" | "error";
 
 interface ClaimPrizeParams {
   debateId: string;
   contractAddress: string;
-}
-
-interface ClaimPrizeResponse {
-  success: boolean;
-  transactionHash: string;
-  blockNumber: number;
-  amount: string;
+  onSuccess?: (txHash: string, amount: bigint) => void;
+  onError?: (error: Error) => void;
 }
 
 export function usePrizeClaim() {
-  const queryClient = useQueryClient();
-  const config = useConfig();
   const { address } = useAccount();
+  const { writeContractAsync } = useWriteContract();
 
-  const mutation = useMutation({
-    mutationFn: async (params: ClaimPrizeParams): Promise<ClaimPrizeResponse> => {
-      if (!address) {
-        throw new Error("Wallet not connected");
+  // State management
+  const [status, setStatus] = useState<ClaimPrizeStatus>("idle");
+  const [transactionHash, setTransactionHash] = useState<string | null>(null);
+  const [prizeAmount, setPrizeAmount] = useState<bigint | null>(null);
+  const [error, setError] = useState<Error | null>(null);
+  const [isEligible, setIsEligible] = useState<boolean | null>(null);
+  const [eligibilityReason, setEligibilityReason] = useState<string | null>(null);
+
+  /**
+   * Claim prize with on-chain verification and confirmation
+   */
+  const claimPrize = async ({ debateId, contractAddress, onSuccess, onError }: ClaimPrizeParams) => {
+    if (!address) {
+      const error = new Error("Wallet not connected");
+      setError(error);
+      setStatus("error");
+      onError?.(error);
+      throw error;
+    }
+
+    try {
+      // Reset state
+      setError(null);
+      setTransactionHash(null);
+      setPrizeAmount(null);
+      setIsEligible(null);
+      setEligibilityReason(null);
+
+      // Step 1: Verify eligibility on-chain
+      console.log(`[PrizeClaim] Verifying eligibility for debate ${debateId}...`);
+      setStatus("verifying");
+
+      const eligibility = await verifyPrizeClaimEligibility(debateId, address);
+
+      setIsEligible(eligibility.eligible);
+      setEligibilityReason(eligibility.reason);
+
+      if (!eligibility.eligible) {
+        const error = new Error(eligibility.reason);
+        console.log(`[PrizeClaim] Not eligible: ${eligibility.reason}`);
+        setError(error);
+        setStatus("error");
+        onError?.(error);
+        throw error;
       }
 
-      const eligibility = await verifyClaimEligibility(
-        params.contractAddress,
-        address,
-        config
-      );
-
-      if (!eligibility.isEligible) {
-        throw new Error(eligibility.reason || "Not eligible to claim prize");
+      if (eligibility.alreadyClaimed) {
+        const error = new Error("Prize already claimed on blockchain");
+        console.log(`[PrizeClaim] Already claimed`);
+        setError(error);
+        setStatus("error");
+        onError?.(error);
+        throw error;
       }
 
-      try {
-        const result = await claimPrizeWithConfirmation(
-          params.contractAddress,
-          config
-        );
+      console.log(`[PrizeClaim] Eligibility verified`);
+      console.log(`  Winner: ${eligibility.onChainWinner}`);
+      console.log(`  Prize amount: ${eligibility.prizeAmount?.toString()}`);
 
-        const apiResponse = await fetch(
-          `/api/debates/${params.debateId}/claim`,
+      setPrizeAmount(eligibility.prizeAmount || BigInt(0));
+
+      // Step 2: Sign transaction
+      console.log(`[PrizeClaim] Requesting wallet signature...`);
+      setStatus("signing");
+
+      // Note: Adjust ABI and function name based on your actual contract
+      const hash = await writeContractAsync({
+        address: contractAddress as `0x${string}`,
+        abi: [
           {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              winnerAddress: address,
-              contractAddress: params.contractAddress,
-              transactionHash: result.transactionHash,
-              blockNumber: result.blockNumber,
-              amount: eligibility.amount,
-            }),
-          }
+            name: "claimPrize",
+            type: "function",
+            stateMutability: "nonpayable",
+            inputs: [],
+            outputs: [],
+          },
+        ],
+        functionName: "claimPrize",
+      });
+
+      setTransactionHash(hash);
+      console.log(`[PrizeClaim] Transaction submitted: ${hash}`);
+
+      // Step 3: Wait for confirmation
+      console.log(`[PrizeClaim] Waiting for blockchain confirmation...`);
+      setStatus("confirming");
+
+      const confirmation = await waitForConfirmation(hash);
+
+      if (!confirmation.success || !confirmation.receipt) {
+        throw new Error(
+          confirmation.error?.message || "Transaction failed on blockchain"
         );
-
-        if (!apiResponse.ok) {
-          console.error("Failed to record claim in database");
-        }
-
-        return {
-          success: true,
-          transactionHash: result.transactionHash,
-          blockNumber: result.blockNumber,
-          amount: eligibility.amount || "0",
-        };
-      } catch (error) {
-        throw parseContractError(error);
       }
-    },
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["debate", variables.debateId] });
-      queryClient.invalidateQueries({ queryKey: ["user", address] });
-    },
-  });
+
+      console.log(`[PrizeClaim] Transaction confirmed at block ${confirmation.blockNumber}`);
+
+      // Step 4: Sync with database
+      console.log(`[PrizeClaim] Syncing with database...`);
+      setStatus("syncing");
+
+      const dbResponse = await fetch(`/api/debates/${debateId}/claim`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          winnerAddress: address,
+          contractAddress,
+          transactionHash: hash,
+          blockNumber: Number(confirmation.blockNumber),
+          amount: eligibility.prizeAmount?.toString(),
+          claimedAt: new Date().toISOString(),
+        }),
+      });
+
+      if (!dbResponse.ok) {
+        const errorData = await dbResponse.json().catch(() => ({}));
+        console.error(`[PrizeClaim] Database sync failed:`, errorData);
+        // Don't throw - prize is claimed on-chain, DB sync can be reconciled later
+      } else {
+        console.log(`[PrizeClaim] Database synced successfully`);
+      }
+
+      // Step 5: Success
+      setStatus("success");
+      console.log(`[PrizeClaim] Prize claimed successfully!`);
+      console.log(`  Debate: ${debateId}`);
+      console.log(`  Transaction: ${hash}`);
+      console.log(`  Amount: ${eligibility.prizeAmount?.toString()}`);
+
+      onSuccess?.(hash, eligibility.prizeAmount || BigInt(0));
+
+      return {
+        transactionHash: hash,
+        blockNumber: confirmation.blockNumber,
+        amount: eligibility.prizeAmount,
+      };
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error("Unknown error claiming prize");
+      console.error(`[PrizeClaim] Prize claim failed:`, error);
+
+      setError(error);
+      setStatus("error");
+      onError?.(error);
+
+      throw error;
+    }
+  };
+
+  /**
+   * Check eligibility without claiming
+   */
+  const checkEligibility = async (debateId: string): Promise<boolean> => {
+    if (!address) {
+      return false;
+    }
+
+    try {
+      const eligibility = await verifyPrizeClaimEligibility(debateId, address);
+      setIsEligible(eligibility.eligible);
+      setEligibilityReason(eligibility.reason);
+      setPrizeAmount(eligibility.prizeAmount || null);
+      return eligibility.eligible;
+    } catch (error) {
+      console.error(`[PrizeClaim] Error checking eligibility:`, error);
+      return false;
+    }
+  };
+
+  /**
+   * Reset the hook state
+   */
+  const reset = () => {
+    setStatus("idle");
+    setTransactionHash(null);
+    setPrizeAmount(null);
+    setError(null);
+    setIsEligible(null);
+    setEligibilityReason(null);
+  };
+
+  // Helper booleans
+  const isLoading = ["verifying", "signing", "confirming", "syncing"].includes(status);
+  const isSuccess = status === "success";
+  const isError = status === "error";
 
   return {
-    claimPrize: mutation.mutate,
-    claimPrizeAsync: mutation.mutateAsync,
-    isClaiming: mutation.isPending,
-    isSuccess: mutation.isSuccess,
-    error: mutation.error,
-    data: mutation.data,
-    reset: mutation.reset,
+    // Main functions
+    claimPrize,
+    checkEligibility,
+    reset,
+
+    // State
+    status,
+    transactionHash,
+    prizeAmount,
+    error,
+    isEligible,
+    reason: eligibilityReason,
+
+    // Helper booleans
+    isLoading,
+    isSuccess,
+    isError,
+
+    // Granular status checks
+    isVerifying: status === "verifying",
+    isSigning: status === "signing",
+    isConfirming: status === "confirming",
+    isSyncing: status === "syncing",
   };
 }
