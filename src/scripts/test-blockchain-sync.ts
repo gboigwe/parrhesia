@@ -123,7 +123,7 @@ async function testCreateDebateFlow(walletClient: any, account: any, publicClien
     address: DEBATE_FACTORY_ADDRESS,
     abi: DebateFactoryABI,
     functionName: 'createDebate',
-    args: [stakeAmount, USDC_ADDRESS],
+    args: [stakeAmount],
   });
 
   log(`Transaction submitted: ${createHash}`, 'yellow');
@@ -147,7 +147,7 @@ async function testCreateDebateFlow(walletClient: any, account: any, publicClien
   const poolAddress = await publicClient.readContract({
     address: DEBATE_FACTORY_ADDRESS,
     abi: DebateFactoryABI,
-    functionName: 'debates',
+    functionName: 'getDebate',
     args: [BigInt(debateId!)],
   }) as `0x${string}`;
 
@@ -224,7 +224,7 @@ async function testJoinDebateFlow(
   const joinHash = await walletClient.writeContract({
     address: poolAddress,
     abi: DebatePoolABI,
-    functionName: 'joinDebate',
+    functionName: 'stake',
   });
 
   log(`Join transaction submitted: ${joinHash}`, 'yellow');
@@ -285,7 +285,7 @@ async function testEventListener(walletClient: any, account: any, publicClient: 
     address: DEBATE_FACTORY_ADDRESS,
     abi: DebateFactoryABI,
     functionName: 'createDebate',
-    args: [stakeAmount, USDC_ADDRESS],
+    args: [stakeAmount],
   });
 
   const confirmation = await waitForConfirmation(createHash);
